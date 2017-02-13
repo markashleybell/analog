@@ -16,6 +16,9 @@ namespace analog
         private string _databaseFilename = "tmp.db";
         private string _connectionString = null;
 
+        public int EntryCount { get; private set; }
+        public int ResultCount { get; private set; }
+
         public LogEntryCollection()
         {
             // Set up connection string using various pragmas for insert performance
@@ -29,7 +32,7 @@ namespace analog
             _connectionString = connectionStringBuilder.ToString();
         }
 
-        public void CreateDatabase()
+        public void CreateDatabaseIfNeeded()
         {
             if(!File.Exists(_databaseFilename)) 
             {
@@ -42,14 +45,21 @@ namespace analog
             }
         }
 
-        public void LoadDataFromFiles()
+        public void ClearDatabase()
         {
-            var logFiles = new string[] {
-                "../../../test-logs/sml.log",
-                "../../../test-logs/med.log",
-                "../../../test-logs/lge.log"
-            };
-    
+            using (var conn = new SQLiteConnection(_connectionString))
+            {
+                conn.Open();
+                new SQLiteCommand("DELETE FROM entries", conn).ExecuteNonQuery();
+            }
+        }
+
+        public void LoadDataFromFiles(string[] files)
+        {
+            ClearDatabase();
+            ClearItems();
+            EntryCount = 0;
+
             var excludeStaticAssetRequests = true;
     
             var sql = @"INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?);";
@@ -57,9 +67,7 @@ namespace analog
             using (var conn = new SQLiteConnection(_connectionString))
             {
                 conn.Open();
-
-                new SQLiteCommand("DELETE FROM entries", conn).ExecuteNonQuery();
-        
+                
                 using(var transaction = conn.BeginTransaction())
                 {
                     using (var cmd = conn.CreateCommand())
@@ -80,10 +88,10 @@ namespace analog
                 
                         cmd.Parameters.AddRange(parameters);
                 
-                        foreach(var file in logFiles)
+                        foreach(var file in files)
                         {
                             var lines = File.ReadLines(file);
-                    
+                            
                             foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("#")))
                             {
                                 var vals = line.Split(' ');
@@ -101,6 +109,8 @@ namespace analog
                                     parameters[8].Value = vals[13];
                             
                                     cmd.ExecuteNonQuery();
+
+                                    EntryCount++;
                                 }
                             }
                         }
@@ -114,6 +124,7 @@ namespace analog
         public void Query(string query)
         {
             ClearItems();
+            ResultCount = 0;
 
             using (var conn = new SQLiteConnection(_connectionString))
             {
@@ -126,6 +137,7 @@ namespace analog
                 while (rdr.Read())
                 {
                     Add(new LogEntry(rdr));
+                    ResultCount++;
                 }
             }
         }

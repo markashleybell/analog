@@ -62,6 +62,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CustomCommands.cs" />
     <Compile Include="LogEntry.cs" />
     <Compile Include="LogEntryCollection.cs" />
     <Page Include="MainWindow.xaml">
