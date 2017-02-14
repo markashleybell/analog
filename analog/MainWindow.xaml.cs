@@ -144,7 +144,7 @@ namespace analog
             _queryWorker.RunWorkerAsync(text);
         }
 
-        private void button_Click(object sender, RoutedEventArgs e)
+        private void Execute_Click(object sender, RoutedEventArgs e)
         {
             DoQuery(textBox.Text);
         }
@@ -200,6 +200,30 @@ namespace analog
         private void ExitCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             Application.Current.Shutdown();
+        }
+
+        private void Filter_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = dataGrid.SelectedCells;
+
+            var conditions = new List<string>();
+            
+            foreach(var cell in selected)
+            {
+                var header = cell.Column.Header;
+                var content = cell.Column.GetCellContent(cell.Item) as TextBlock;
+
+                conditions.Add(string.Format("{0} = '{1}'", header, content.Text));
+            }
+
+            var whereClause = " or ";
+
+            if (!textBox.Text.ToLowerInvariant().Contains("where"))
+                whereClause = " where ";
+
+            whereClause += string.Join(" or ", conditions.ToArray());
+
+            textBox.Text += whereClause;
         }
     }
 }

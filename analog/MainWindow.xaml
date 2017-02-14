@@ -21,6 +21,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="76" MinHeight="76"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -37,8 +38,9 @@
             </MenuItem>
         </Menu>
         <TextBox x:Name="textBox" Margin="0" Grid.Row="1" Grid.Column="0" TextWrapping="Wrap" AcceptsReturn="True" Text="select * from entries" FontFamily="Consolas" FontSize="16"/>
-        <Button x:Name="button" Content="Execute" Grid.Row="1" Grid.Column="1" Margin="0" Click="button_Click"/>
-        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="2" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ItemsSource="{Binding}" ColumnWidth="*">
+        <Button x:Name="executeButton" Grid.Row="1" Grid.Column="1" Margin="0" Click="Execute_Click" Content="Execute" />
+        <Button x:Name="filterButton" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Filter by selected" Height="30" Click="Filter_Click" />
+        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="3" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ItemsSource="{Binding}" ColumnWidth="*" SelectionUnit="Cell">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Style.Triggers>
@@ -58,7 +60,7 @@
                 </Style>
             </DataGrid.RowStyle>
         </DataGrid>
-        <StatusBar x:Name="statusBar" Grid.Row="3" Grid.ColumnSpan="2" Margin="0">
+        <StatusBar x:Name="statusBar" Grid.Row="4" Grid.ColumnSpan="2" Margin="0">
             <StatusBarItem Width="180">
                 <TextBlock Name="loadStatus" Text="No data loaded"/>
             </StatusBarItem>
