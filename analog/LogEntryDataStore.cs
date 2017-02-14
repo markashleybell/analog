@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Configuration;
 using System.Data;
 using System.Data.SQLite;
 using System.IO;
@@ -11,15 +9,12 @@ using System.Threading.Tasks;
 
 namespace analog
 {
-    public class LogEntryCollection : ObservableCollection<LogEntry>
+    public class LogEntryDataStore
     {
         private string _databaseFilename = "tmp.db";
         private string _connectionString = null;
 
-        public int EntryCount { get; private set; }
-        public int ResultCount { get; private set; }
-
-        public LogEntryCollection()
+        public LogEntryDataStore()
         {
             // Set up connection string using various pragmas for insert performance
             var connectionStringBuilder = new SQLiteConnectionStringBuilder();
@@ -34,7 +29,7 @@ namespace analog
 
         public void CreateDatabaseIfNeeded()
         {
-            if(!File.Exists(_databaseFilename)) 
+            if (!File.Exists(_databaseFilename))
             {
                 SQLiteConnection.CreateFile(_databaseFilename);
                 using (var conn = new SQLiteConnection(_connectionString))
@@ -54,26 +49,26 @@ namespace analog
             }
         }
 
-        public void LoadDataFromFiles(string[] files)
+        public int PopulateDatabaseFromFiles(string[] files)
         {
             ClearDatabase();
-            ClearItems();
-            EntryCount = 0;
+
+            var resultCount = 0;
 
             var excludeStaticAssetRequests = true;
-    
+
             var sql = @"INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?);";
 
             using (var conn = new SQLiteConnection(_connectionString))
             {
                 conn.Open();
-                
-                using(var transaction = conn.BeginTransaction())
+
+                using (var transaction = conn.BeginTransaction())
                 {
                     using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = sql;
-                
+
                         var parameters = new SQLiteParameter[] {
                             new SQLiteParameter("@datetime", DbType.String),
                             new SQLiteParameter("@ip", DbType.String),
@@ -85,18 +80,18 @@ namespace analog
                             new SQLiteParameter("@bytesout", DbType.Int32),
                             new SQLiteParameter("@bytesin", DbType.Int32)
                         };
-                
+
                         cmd.Parameters.AddRange(parameters);
-                
-                        foreach(var file in files)
+
+                        foreach (var file in files)
                         {
                             var lines = File.ReadLines(file);
-                            
+
                             foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("#")))
                             {
                                 var vals = line.Split(' ');
-                        
-                                if(!excludeStaticAssetRequests || ProcessLine(vals))
+
+                                if (!excludeStaticAssetRequests || ProcessLine(vals))
                                 {
                                     parameters[0].Value = vals[0] + " " + vals[1];
                                     parameters[1].Value = vals[7];
@@ -107,25 +102,24 @@ namespace analog
                                     parameters[6].Value = vals[8];
                                     parameters[7].Value = vals[12];
                                     parameters[8].Value = vals[13];
-                            
+
                                     cmd.ExecuteNonQuery();
 
-                                    EntryCount++;
+                                    resultCount++;
                                 }
                             }
                         }
                     }
-            
+
                     transaction.Commit();
                 }
             }
+
+            return resultCount;
         }
 
-        public void Query(string query)
+        public IEnumerable<LogEntry> Query(string query)
         {
-            ClearItems();
-            ResultCount = 0;
-
             using (var conn = new SQLiteConnection(_connectionString))
             {
                 conn.Open();
@@ -136,8 +130,7 @@ namespace analog
                 var rdr = cmd.ExecuteReader();
                 while (rdr.Read())
                 {
-                    Add(new LogEntry(rdr));
-                    ResultCount++;
+                    yield return new LogEntry(rdr);
                 }
             }
         }

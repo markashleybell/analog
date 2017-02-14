@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -22,42 +23,127 @@ namespace analog
     /// </summary>
     public partial class MainWindow : Window
     {
-        private LogEntryCollection _data;
-        private BackgroundWorker _worker;
-        private OpenFileDialog _openFileDialog;
+        private LogEntryDataStore _db = new LogEntryDataStore();
+        private ObservableCollection<LogEntry> _results = new ObservableCollection<LogEntry>();
+        private BackgroundWorker _initWorker = new BackgroundWorker();
+        private BackgroundWorker _loadWorker = new BackgroundWorker();
+        private BackgroundWorker _queryWorker = new BackgroundWorker();
+        private OpenFileDialog _openFileDialog = new OpenFileDialog();
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _openFileDialog = new OpenFileDialog();
             _openFileDialog.Multiselect = true;
             _openFileDialog.Filter = "IIS Log Files|*.log";
             _openFileDialog.RestoreDirectory = true;
 
-            _data = new LogEntryCollection();
-            dataGrid.DataContext = _data;
+            dataGrid.DataContext = _results;
 
-            _data.CreateDatabaseIfNeeded();
-            _data.ClearDatabase();
+            _loadWorker.WorkerReportsProgress = true;
+            _queryWorker.WorkerReportsProgress = true;
+
+            _initWorker.DoWork += (sender, e) => {
+                _db.CreateDatabaseIfNeeded();
+                _db.ClearDatabase();
+            };
+
+            _initWorker.RunWorkerCompleted += (sender, e) => {
+                appStatus.Text = "Ready";
+            };
+
+            _initWorker.RunWorkerAsync();
+
+            _loadWorker.DoWork += (sender, e) => {
+                _loadWorker.ReportProgress(0, "Loading...");
+                var fileNames = (string[])e.Argument;
+                try
+                {
+                    var loadCount = _db.PopulateDatabaseFromFiles(fileNames);
+                    e.Result = new LoadResult {
+                        Success = true,
+                        Files = fileNames.Length,
+                        Count = loadCount
+                    };
+                }
+                catch(Exception ex)
+                {
+                    e.Result = new LoadResult {
+                        Error = ex.Message
+                    };
+                }
+            };
+
+            _loadWorker.ProgressChanged += (sender, e) => {
+                loadStatus.Text = (string)e.UserState;
+            };
+
+            _loadWorker.RunWorkerCompleted += (sender, e) => {
+                var result = (LoadResult)e.Result;
+                if(result.Success)
+                {
+                    loadStatus.Text = string.Format(
+                        "{0} file{1} loaded ({2} entries)",
+                        result.Files,
+                        result.Files == 1 ? "" : "s",
+                        result.Count
+                    );
+                    queryStatus.Text = "";
+                }
+                else
+                {
+                    loadStatus.Text = "Error";
+                    MessageBox.Show(result.Error, "SQL Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
+
+            _queryWorker.DoWork += (sender, e) => {
+                _queryWorker.ReportProgress(0, "Running...");
+                try
+                {
+                    var results = _db.Query((string)e.Argument);
+                    e.Result = new QueryResult {
+                        Success = true,
+                        Results = results
+                    };
+                }
+                catch (Exception ex)
+                {
+                    e.Result = new QueryResult {
+                        Error = ex.Message
+                    };
+                }
+            };
+
+            _queryWorker.ProgressChanged += (sender, e) => {
+                // TODO: WHY doesn't this update the text? The EXACT SAME CODE works for the load status...
+                queryStatus.Text = (string)e.UserState;
+            };
+
+            _queryWorker.RunWorkerCompleted += (sender, e) => {
+                var result = (QueryResult)e.Result;
+                try
+                {
+                    var results = result.Results.ToList();
+                    results.ForEach(r => _results.Add(r));
+                    queryStatus.Text = string.Format(
+                        "{0} row{1} matched",
+                        results.Count,
+                        results.Count == 1 ? "" : "s"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    queryStatus.Text = "Error";
+                    MessageBox.Show(ex.Message, "SQL Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
         }
-
+        
         private void DoQuery(string text)
         {
-            try
-            {
-                _data.Query(text);
-                queryStatus.Text = string.Format(
-                    "{0} row{1} matched",
-                    _data.ResultCount,
-                    _data.ResultCount == 1 ? "" : "s"
-                );
-            }
-            catch(Exception ex)
-            {
-                queryStatus.Text = "Error";
-                MessageBox.Show(ex.Message, "SQL Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            _results.Clear();
+            _queryWorker.RunWorkerAsync(text);
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
@@ -74,14 +160,7 @@ namespace analog
         {
             if (_openFileDialog.ShowDialog() == true)
             {
-                _data.LoadDataFromFiles(_openFileDialog.FileNames);
-                dataStatus.Text = string.Format(
-                    "{0} file{1} loaded ({2} entries)", 
-                    _openFileDialog.FileNames.Length,
-                    _openFileDialog.FileNames.Length == 1 ? "" : "s",
-                    _data.EntryCount
-                );
-                queryStatus.Text = "";
+                _loadWorker.RunWorkerAsync(_openFileDialog.FileNames);
             }
         }
 

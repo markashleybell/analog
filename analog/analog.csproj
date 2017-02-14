@@ -63,8 +63,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="CustomCommands.cs" />
+    <Compile Include="LoadResult.cs" />
     <Compile Include="LogEntry.cs" />
-    <Compile Include="LogEntryCollection.cs" />
+    <Compile Include="LogEntryDataStore.cs" />
+    <Compile Include="QueryResult.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
