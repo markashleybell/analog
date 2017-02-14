@@ -64,7 +64,6 @@
     </ApplicationDefinition>
     <Compile Include="CustomCommands.cs" />
     <Compile Include="LoadResult.cs" />
-    <Compile Include="LogEntry.cs" />
     <Compile Include="LogEntryDataStore.cs" />
     <Compile Include="QueryResult.cs" />
     <Page Include="MainWindow.xaml">

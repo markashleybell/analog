@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace analog
     public partial class MainWindow : Window
     {
         private LogEntryDataStore _db = new LogEntryDataStore();
-        private ObservableCollection<LogEntry> _results = new ObservableCollection<LogEntry>();
+        private DataTable _data = new DataTable();
         private BackgroundWorker _initWorker = new BackgroundWorker();
         private BackgroundWorker _loadWorker = new BackgroundWorker();
         private BackgroundWorker _queryWorker = new BackgroundWorker();
@@ -37,8 +38,6 @@ namespace analog
             _openFileDialog.Multiselect = true;
             _openFileDialog.Filter = "IIS Log Files|*.log";
             _openFileDialog.RestoreDirectory = true;
-
-            dataGrid.DataContext = _results;
 
             _loadWorker.WorkerReportsProgress = true;
             _queryWorker.WorkerReportsProgress = true;
@@ -116,7 +115,6 @@ namespace analog
             };
 
             _queryWorker.ProgressChanged += (sender, e) => {
-                // TODO: WHY doesn't this update the text? The EXACT SAME CODE works for the load status...
                 queryStatus.Text = (string)e.UserState;
             };
 
@@ -124,8 +122,8 @@ namespace analog
                 var result = (QueryResult)e.Result;
                 try
                 {
-                    var results = result.Results.ToList();
-                    results.ForEach(r => _results.Add(r));
+                    var results = result.Results.DefaultView;
+                    dataGrid.DataContext = results;
                     queryStatus.Text = string.Format(
                         "{0} row{1} matched",
                         results.Count,
@@ -142,7 +140,7 @@ namespace analog
         
         private void DoQuery(string text)
         {
-            _results.Clear();
+            _data.Clear();
             _queryWorker.RunWorkerAsync(text);
         }
 

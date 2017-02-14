@@ -118,7 +118,7 @@ namespace analog
             return resultCount;
         }
 
-        public IEnumerable<LogEntry> Query(string query)
+        public DataTable Query(string query)
         {
             using (var conn = new SQLiteConnection(_connectionString))
             {
@@ -127,10 +127,11 @@ namespace analog
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = query;
 
-                var rdr = cmd.ExecuteReader();
-                while (rdr.Read())
+                using (var a = new SQLiteDataAdapter(cmd))
                 {
-                    yield return new LogEntry(rdr);
+                    var table = new DataTable();
+                    a.Fill(table);
+                    return table;
                 }
             }
         }
