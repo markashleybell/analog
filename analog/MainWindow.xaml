@@ -38,7 +38,26 @@
         </Menu>
         <TextBox x:Name="textBox" Margin="0" Grid.Row="1" Grid.Column="0" TextWrapping="Wrap" AcceptsReturn="True" Text="select * from entries" FontFamily="Consolas" FontSize="16"/>
         <Button x:Name="button" Content="Execute" Grid.Row="1" Grid.Column="1" Margin="0" Click="button_Click"/>
-        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="2" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ItemsSource="{Binding}"/>
+        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="2" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ItemsSource="{Binding}" ColumnWidth="*">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding status}" Value="500">
+                            <Setter Property="Background" Value="LightSalmon"></Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding status}" Value="301">
+                            <Setter Property="Background" Value="LightBlue"></Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding status}" Value="302">
+                            <Setter Property="Background" Value="LightBlue"></Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding status}" Value="404">
+                            <Setter Property="Background" Value="LightYellow"></Setter>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
         <StatusBar x:Name="statusBar" Grid.Row="3" Grid.ColumnSpan="2" Margin="0">
             <StatusBarItem Width="180">
                 <TextBlock Name="loadStatus" Text="No data loaded"/>
