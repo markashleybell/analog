@@ -43,6 +43,7 @@
         <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="3" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ColumnWidth="*" SelectionUnit="Cell">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
+                    <Setter Property="FontSize" Value="12"></Setter>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding status}" Value="500">
                             <Setter Property="Background" Value="LightSalmon"></Setter>
