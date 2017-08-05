@@ -137,8 +137,6 @@ namespace analog
                     MessageBox.Show(ex.Message, "SQL Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             };
-
-            _loadWorker.RunWorkerAsync(new[] { @"C:\Src\analog\test-logs\sml.log" });
         }
         
         private void DoQuery(string text)
