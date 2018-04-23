@@ -40,7 +40,7 @@
         <TextBox x:Name="textBox" Margin="0" Grid.Row="1" Grid.Column="0" TextWrapping="Wrap" AcceptsReturn="True" Text="select datetime, method, status, ip, url, query, useragent from entries" FontFamily="Consolas" FontSize="16"/>
         <Button x:Name="executeButton" Grid.Row="1" Grid.Column="1" Margin="0" Click="Execute_Click" Content="Execute" />
         <Button x:Name="filterButton" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Filter by selected" Height="30" Click="Filter_Click" />
-        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="3" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ColumnWidth="*" SelectionUnit="Cell" HorizontalGridLinesBrush="#FFABABAB" VerticalGridLinesBrush="#FFABABAB">
+        <DataGrid x:Name="dataGrid" Margin="0" Grid.Row="3" Grid.ColumnSpan="2" IsReadOnly="True" CanUserAddRows="False" ColumnWidth="Auto" SelectionUnit="Cell" HorizontalGridLinesBrush="#FFABABAB" VerticalGridLinesBrush="#FFABABAB">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="FontSize" Value="12"></Setter>
