@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace analog
+namespace Analog
 {
     public class LogEntryDataStore
     {
-        private string _databaseFilename = "tmp.db";
-        private string _connectionString = null;
+        private readonly string _databaseFilename = "tmp.db";
+        private readonly string _connectionString;
 
         public LogEntryDataStore()
         {
             // Set up connection string using various pragmas for insert performance
-            var connectionStringBuilder = new SQLiteConnectionStringBuilder();
-            connectionStringBuilder.DataSource = _databaseFilename;
-            connectionStringBuilder.Version = 3;
-            connectionStringBuilder.PageSize = 4096;
-            connectionStringBuilder.JournalMode = SQLiteJournalModeEnum.Memory;
-            connectionStringBuilder.SyncMode = SynchronizationModes.Off;
+            var connectionStringBuilder = new SQLiteConnectionStringBuilder {
+                DataSource = _databaseFilename,
+                Version = 3,
+                PageSize = 4096,
+                JournalMode = SQLiteJournalModeEnum.Memory,
+                SyncMode = SynchronizationModes.Off
+            };
 
             _connectionString = connectionStringBuilder.ToString();
         }
@@ -32,21 +29,17 @@ namespace analog
             if (!File.Exists(_databaseFilename))
             {
                 SQLiteConnection.CreateFile(_databaseFilename);
-                using (var conn = new SQLiteConnection(_connectionString))
-                {
-                    conn.Open();
-                    new SQLiteCommand(File.ReadAllText("schema.sql"), conn).ExecuteNonQuery();
-                }
+                using var conn = new SQLiteConnection(_connectionString);
+                conn.Open();
+                new SQLiteCommand(File.ReadAllText("schema.sql"), conn).ExecuteNonQuery();
             }
         }
 
         public void ClearDatabase()
         {
-            using (var conn = new SQLiteConnection(_connectionString))
-            {
-                conn.Open();
-                new SQLiteCommand("DELETE FROM entries", conn).ExecuteNonQuery();
-            }
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
+            new SQLiteCommand("DELETE FROM entries", conn).ExecuteNonQuery();
         }
 
         public int PopulateDatabaseFromFiles(string[] files)
@@ -55,21 +48,20 @@ namespace analog
 
             var resultCount = 0;
 
-            var excludeStaticAssetRequests = true;
+            const bool excludeStaticAssetRequests = true;
 
-            var sql = @"INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?);";
+            const string sql = "INSERT INTO entries VALUES (?,?,?,?,?,?,?,?,?);";
 
             using (var conn = new SQLiteConnection(_connectionString))
             {
                 conn.Open();
 
-                using (var transaction = conn.BeginTransaction())
+                using var transaction = conn.BeginTransaction();
+                using (var cmd = conn.CreateCommand())
                 {
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = sql;
+                    cmd.CommandText = sql;
 
-                        var parameters = new SQLiteParameter[] {
+                    var parameters = new SQLiteParameter[] {
                             new SQLiteParameter("@datetime", DbType.String),
                             new SQLiteParameter("@ip", DbType.String),
                             new SQLiteParameter("@status", DbType.Int32),
@@ -81,38 +73,37 @@ namespace analog
                             new SQLiteParameter("@bytesin", DbType.Int32)
                         };
 
-                        cmd.Parameters.AddRange(parameters);
+                    cmd.Parameters.AddRange(parameters);
 
-                        foreach (var file in files)
+                    foreach (var file in files)
+                    {
+                        var lines = File.ReadLines(file);
+
+                        foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("#")))
                         {
-                            var lines = File.ReadLines(file);
+                            var vals = line.Split(' ');
 
-                            foreach (var line in lines.Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("#")))
+                            if (!excludeStaticAssetRequests || ProcessLine(vals))
                             {
-                                var vals = line.Split(' ');
+                                parameters[0].Value = vals[0] + " " + vals[1];
+                                parameters[1].Value = vals[7];
+                                parameters[2].Value = vals[11];
+                                parameters[3].Value = vals[3];
+                                parameters[4].Value = vals[4];
+                                parameters[5].Value = vals[5] == "-" ? null : vals[5];
+                                parameters[6].Value = vals[8];
+                                parameters[7].Value = vals[12];
+                                parameters[8].Value = vals[13];
 
-                                if (!excludeStaticAssetRequests || ProcessLine(vals))
-                                {
-                                    parameters[0].Value = vals[0] + " " + vals[1];
-                                    parameters[1].Value = vals[7];
-                                    parameters[2].Value = vals[11];
-                                    parameters[3].Value = vals[3];
-                                    parameters[4].Value = vals[4];
-                                    parameters[5].Value = vals[5] == "-" ? null : vals[5];
-                                    parameters[6].Value = vals[8];
-                                    parameters[7].Value = vals[12];
-                                    parameters[8].Value = vals[13];
+                                cmd.ExecuteNonQuery();
 
-                                    cmd.ExecuteNonQuery();
-
-                                    resultCount++;
-                                }
+                                resultCount++;
                             }
                         }
                     }
-
-                    transaction.Commit();
                 }
+
+                transaction.Commit();
             }
 
             return resultCount;
@@ -120,30 +111,24 @@ namespace analog
 
         public DataTable Query(string query)
         {
-            using (var conn = new SQLiteConnection(_connectionString))
-            {
-                conn.Open();
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
 
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = query;
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = query;
 
-                using (var a = new SQLiteDataAdapter(cmd))
-                {
-                    var table = new DataTable();
-                    a.Fill(table);
-                    return table;
-                }
-            }
+            using var a = new SQLiteDataAdapter(cmd);
+            var table = new DataTable();
+            a.Fill(table);
+            return table;
         }
 
-        private bool ProcessLine(string[] values)
-        {
-            return !values[4].EndsWith(".jpg")
+        private bool ProcessLine(string[] values) =>
+            !values[4].EndsWith(".jpg")
                 && !values[4].EndsWith(".png")
                 && !values[4].EndsWith(".js")
                 && !values[4].EndsWith(".woff")
                 && !values[4].EndsWith(".woff2")
                 && !values[4].EndsWith(".gif");
-        }
     }
 }

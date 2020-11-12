@@ -1,36 +1,25 @@
-﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32;
 
-namespace analog
+namespace Analog
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MainWindow.xaml.
     /// </summary>
     public partial class MainWindow : Window
     {
-        private LogEntryDataStore _db = new LogEntryDataStore();
-        private DataTable _data = new DataTable();
-        private BackgroundWorker _initWorker = new BackgroundWorker();
-        private BackgroundWorker _loadWorker = new BackgroundWorker();
-        private BackgroundWorker _queryWorker = new BackgroundWorker();
-        private OpenFileDialog _openFileDialog = new OpenFileDialog();
+        private readonly LogEntryDataStore _db = new LogEntryDataStore();
+        private readonly DataTable _data = new DataTable();
+        private readonly BackgroundWorker _initWorker = new BackgroundWorker();
+        private readonly BackgroundWorker _loadWorker = new BackgroundWorker();
+        private readonly BackgroundWorker _queryWorker = new BackgroundWorker();
+        private readonly OpenFileDialog _openFileDialog = new OpenFileDialog();
 
         public MainWindow()
         {
@@ -48,9 +37,7 @@ namespace analog
                 _db.ClearDatabase();
             };
 
-            _initWorker.RunWorkerCompleted += (sender, e) => {
-                appStatus.Text = "Ready";
-            };
+            _initWorker.RunWorkerCompleted += (sender, e) => appStatus.Text = "Ready";
 
             _initWorker.RunWorkerAsync();
 
@@ -66,7 +53,7 @@ namespace analog
                         Count = loadCount
                     };
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     e.Result = new LoadResult {
                         Error = ex.Message
@@ -74,21 +61,19 @@ namespace analog
                 }
             };
 
-            _loadWorker.ProgressChanged += (sender, e) => {
-                loadStatus.Text = (string)e.UserState;
-            };
+            _loadWorker.ProgressChanged += (sender, e) => loadStatus.Text = (string)e.UserState;
 
             _loadWorker.RunWorkerCompleted += (sender, e) => {
                 var result = (LoadResult)e.Result;
-                if(result.Success)
+                if (result.Success)
                 {
                     loadStatus.Text = string.Format(
                         "{0} file{1} loaded ({2} entries)",
                         result.Files,
-                        result.Files == 1 ? "" : "s",
+                        result.Files == 1 ? string.Empty : "s",
                         result.Count
                     );
-                    queryStatus.Text = "";
+                    queryStatus.Text = string.Empty;
                 }
                 else
                 {
@@ -115,9 +100,7 @@ namespace analog
                 }
             };
 
-            _queryWorker.ProgressChanged += (sender, e) => {
-                queryStatus.Text = (string)e.UserState;
-            };
+            _queryWorker.ProgressChanged += (sender, e) => queryStatus.Text = (string)e.UserState;
 
             _queryWorker.RunWorkerCompleted += (sender, e) => {
                 var result = (QueryResult)e.Result;
@@ -128,7 +111,7 @@ namespace analog
                     queryStatus.Text = string.Format(
                         "{0} row{1} matched",
                         results.Count,
-                        results.Count == 1 ? "" : "s"
+                        results.Count == 1 ? string.Empty : "s"
                     );
                 }
                 catch (Exception ex)
@@ -138,22 +121,16 @@ namespace analog
                 }
             };
         }
-        
+
         private void DoQuery(string text)
         {
             _data.Clear();
             _queryWorker.RunWorkerAsync(text);
         }
 
-        private void Execute_Click(object sender, RoutedEventArgs e)
-        {
-            DoQuery(textBox.Text);
-        }
+        private void Execute_Click(object sender, RoutedEventArgs e) => DoQuery(textBox.Text);
 
-        private void OpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = true;
-        }
+        private void OpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 
         private void OpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
@@ -163,53 +140,29 @@ namespace analog
             }
         }
 
-        private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = true;
-        }
+        private void SaveCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 
-        private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            MessageBox.Show("SAVE");
-        }
+        private void SaveCommand_Executed(object sender, ExecutedRoutedEventArgs e) => MessageBox.Show("SAVE");
 
-        private void SaveAsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = true;
-        }
+        private void SaveAsCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 
-        private void SaveAsCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            MessageBox.Show("SAVEAS");
-        }
+        private void SaveAsCommand_Executed(object sender, ExecutedRoutedEventArgs e) => MessageBox.Show("SAVEAS");
 
-        private void ExecuteQueryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = true;   
-        }
+        private void ExecuteQueryCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 
-        private void ExecuteQueryCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            DoQuery(textBox.Text);
-        }
+        private void ExecuteQueryCommand_Executed(object sender, ExecutedRoutedEventArgs e) => DoQuery(textBox.Text);
 
-        private void ExitCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = true;
-        }
+        private void ExitCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = true;
 
-        private void ExitCommand_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
+        private void ExitCommand_Executed(object sender, ExecutedRoutedEventArgs e) => Application.Current.Shutdown();
 
         private void Filter_Click(object sender, RoutedEventArgs e)
         {
             var selected = dataGrid.SelectedCells;
 
             var conditions = new List<string>();
-            
-            foreach(var cell in selected)
+
+            foreach (var cell in selected)
             {
                 var header = cell.Column.Header;
                 var content = cell.Column.GetCellContent(cell.Item) as TextBlock;
@@ -219,8 +172,10 @@ namespace analog
 
             var whereClause = " or ";
 
-            if (!textBox.Text.ToLowerInvariant().Contains("where"))
+            if (!textBox.Text.Contains("where", StringComparison.InvariantCultureIgnoreCase))
+            {
                 whereClause = " where ";
+            }
 
             whereClause += string.Join(" or ", conditions.ToArray());
 

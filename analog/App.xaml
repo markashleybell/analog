@@ -1,9 +1,8 @@
-﻿<Application x:Class="analog.App"
+﻿<Application x:Class="Analog.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:analog"
+             xmlns:local="clr-namespace:Analog"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>
